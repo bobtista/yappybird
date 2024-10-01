@@ -16,7 +16,7 @@ const bird = {
     y: canvas.height / 2,
     radius: 20,
     velocity: 0,
-    gravity: 0.5,
+    gravity: 0.1,
     jump: -10
 };
 
@@ -28,6 +28,9 @@ let analyser;
 let dataArray;
 
 let isGameOver = false;
+let lastVolume = 0;
+const volumeThreshold = 0.1; // Increased from 0.05 to 0.1
+const maxVelocity = 4; // Decreased from 5 to 4
 
 function drawBird() {
     ctx.beginPath();
@@ -48,7 +51,10 @@ function drawPipes() {
 function updateGame() {
     if (isGameOver) return;
 
-    bird.velocity += bird.gravity;
+    // Add a terminal velocity to prevent the bird from moving too fast
+    const terminalVelocity = 3;
+    bird.velocity = Math.max(-terminalVelocity, Math.min(terminalVelocity, bird.velocity));
+
     bird.y += bird.velocity;
 
     // Prevent the bird from going below the screen
@@ -60,11 +66,11 @@ function updateGame() {
     // Prevent the bird from going above the screen
     if (bird.y - bird.radius < 0) {
         bird.y = bird.radius;
-        bird.velocity = Math.max(0, bird.velocity); // Allow downward velocity, prevent upward
+        bird.velocity = 0;
     }
 
     pipes.forEach(pipe => {
-        pipe.x -= 2;
+        pipe.x -= 1.5; // Decreased from 2 to 1.5 to slow down the game
 
         if (pipe.x + pipe.width < 0) {
             pipes.shift();
@@ -81,9 +87,9 @@ function updateGame() {
         }
     });
 
-    if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
-        const gap = 150;
-        const pipeTop = Math.floor(Math.random() * (canvas.height - gap - 100)) + 50;
+    if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 250) {
+        const gap = 200;
+        const pipeTop = Math.floor(Math.random() * (canvas.height - gap - 200)) + 100;
         pipes.push({
             x: canvas.width,
             top: pipeTop,
@@ -149,23 +155,32 @@ function processAudio() {
         analyser.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
         const normalizedVolume = average / 255;
-        
+
         // Log the audio input to the console
         console.log(`Audio input: ${normalizedVolume.toFixed(3)}`);
 
         // Update volume meter
         volumeMeter.style.setProperty('--volume', `${normalizedVolume * 100}%`);
-        
+
         // Adjust these values to fine-tune the bird's behavior
-        const threshold = 0.6; // Started at 0.1
-        const noiseGate = 0.2; // Ignore audio below this level
-        const maxJump = -5; // Started at -15, make less negative for less powerful jumps
-        
-        if (normalizedVolume > threshold && normalizedVolume > noiseGate) {
-            // Calculate jump strength based on volume, with a maximum limit
-            const jumpStrength = Math.min((normalizedVolume - threshold) * bird.jump * 0.5, maxJump);
-            bird.velocity += jumpStrength;
+        const noiseGate = 0.08;
+        const maxInputVolume = 0.6;
+
+        if (normalizedVolume > noiseGate) {
+            // Calculate velocity based on volume change
+            const volumeChange = normalizedVolume - lastVolume;
+
+            // Apply a logarithmic scale to reduce sensitivity for louder sounds
+            const scaledVolume = Math.log(Math.min(normalizedVolume, maxInputVolume) - noiseGate + 1) / Math.log(maxInputVolume - noiseGate + 1);
+
+            const velocityChange = volumeChange * 25 * scaledVolume;
+
+            // Update bird's velocity, clamping it within the maxVelocity range
+            bird.velocity = Math.max(-maxVelocity, Math.min(maxVelocity, bird.velocity - velocityChange)) + bird.gravity;
         }
+
+        // Update last volume
+        lastVolume = normalizedVolume;
     }
 }
 
