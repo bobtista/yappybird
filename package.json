@@ -1,0 +1,19 @@
+{
+  "name": "yelly-bird",
+  "version": "1.0.0",
+  "description": "A Flappy Bird clone controlled by yelling",
+  "main": "game.js",
+  "scripts": {
+    "start": "http-server"
+  },
+  "keywords": [
+    "game",
+    "flappy-bird",
+    "audio-input"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
