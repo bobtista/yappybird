@@ -12,8 +12,8 @@ Before you begin, ensure you have the following installed:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/bobtista/yelly-bird.git
-   cd yelly-bird
+   git clone https://github.com/bobtista/yappybird.git
+   cd yappybird
    ```
 
 2. Install the dependencies:
